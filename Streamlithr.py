@@ -39,7 +39,7 @@ html, body, [class*="css"] {
     color: #484f58;
     margin-bottom: 0.4rem;
 }
-.stNumberInput input {
+.stNumberInput input, .stTextInput input {
     background: #161b22 !important;
     border: 1px solid #30363d !important;
     border-radius: 6px !important;
@@ -65,10 +65,6 @@ label[data-testid="stWidgetLabel"] {
     padding: 0.7rem 2rem;
     box-shadow: 0 4px 20px rgba(31,111,235,0.3);
 }
-.stButton button:hover {
-    background: linear-gradient(135deg, #388bfd, #58a6ff);
-    transform: translateY(-1px);
-}
 .hr-display {
     font-family: 'Barlow Condensed', sans-serif;
     font-weight: 900;
@@ -84,35 +80,6 @@ label[data-testid="stWidgetLabel"] {
     text-transform: uppercase;
     text-align: center;
     margin-bottom: 0.5rem;
-}
-.metric-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem 0.8rem;
-    border-radius: 6px;
-    margin-bottom: 0.4rem;
-    background: #0d1117;
-}
-.metric-label { font-size: 0.85rem; color: #8b949e; }
-.metric-vals { display: flex; gap: 1.2rem; align-items: center; }
-.val-logit { font-size: 1rem; font-weight: bold; }
-.val-ols { font-size: 0.85rem; color: #6e7681; }
-.conf-badge {
-    font-size: 0.72rem;
-    font-weight: bold;
-    padding: 2px 7px;
-    border-radius: 4px;
-}
-.col-headers {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    padding: 0 0.8rem 0.3rem;
-    font-size: 0.62rem;
-    color: #484f58;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
 }
 .result-card {
     background: #161b22;
@@ -130,8 +97,117 @@ label[data-testid="stWidgetLabel"] {
     font-size: 0.82rem;
     margin-top: 0.8rem;
 }
+.lock-box {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    margin-top: 2rem;
+}
+.lock-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 1.6rem;
+    color: #58a6ff;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.4rem;
+}
+.lock-sub {
+    font-size: 0.75rem;
+    color: #484f58;
+    letter-spacing: 0.08em;
+    margin-bottom: 1.5rem;
+}
 </style>
 """, unsafe_allow_html=True)
+
+# ── Customer Passwords ────────────────────────────────────────────────────────
+# Add a new unique password for each customer who buys.
+# To revoke access, just delete their password from this list.
+# Format: "name-code" makes it easy to track who is who.
+
+VALID_PASSWORDS = {
+    "devan-owner",       # your own access
+    "homer-3847",        # Customer 1
+    "homer-9261",        # Customer 2
+    "homer-5734",        # Customer 3
+    "homer-1829",        # Customer 4
+    "homer-6453",        # Customer 5
+    "homer-2917",        # Customer 6
+    "homer-8365",        # Customer 7
+    "homer-4782",        # Customer 8
+    "homer-5193",        # Customer 9
+    "homer-7624",        # Customer 10
+    "homer-3158",        # Customer 11
+    "homer-9047",        # Customer 12
+    "homer-6831",        # Customer 13
+    "homer-2574",        # Customer 14
+    "homer-8916",        # Customer 15
+    "homer-4239",        # Customer 16
+    "homer-7583",        # Customer 17
+    "homer-1467",        # Customer 18
+    "homer-9728",        # Customer 19
+    "homer-3692",        # Customer 20
+    "homer-5841",        # Customer 21
+    "homer-2306",        # Customer 22
+    "homer-7159",        # Customer 23
+    "homer-4873",        # Customer 24
+    "homer-8524",        # Customer 25
+    "homer-1395",        # Customer 26
+    "homer-6047",        # Customer 27
+    "homer-9382",        # Customer 28
+    "homer-3761",        # Customer 29
+    "homer-5218",        # Customer 30
+    "homer-8934",        # Customer 31
+    "homer-2685",        # Customer 32
+    "homer-7413",        # Customer 33
+    "homer-4956",        # Customer 34
+    "homer-1274",        # Customer 35
+    "homer-6839",        # Customer 36
+    "homer-3527",        # Customer 37
+    "homer-9164",        # Customer 38
+    "homer-8742",        # Customer 39
+    "homer-2493",        # Customer 40
+    "homer-5368",        # Customer 41
+    "homer-7831",        # Customer 42
+    "homer-4015",        # Customer 43
+    "homer-9573",        # Customer 44
+    "homer-1846",        # Customer 45
+    "homer-6392",        # Customer 46
+    "homer-3284",        # Customer 47
+    "homer-8617",        # Customer 48
+    "homer-5749",        # Customer 49
+    "homer-2138",        # Customer 50
+    
+    # Add more below as you get new customers:
+    # "homer-XXXX",
+}
+
+# ── Session state ─────────────────────────────────────────────────────────────
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+# ── Login Screen ──────────────────────────────────────────────────────────────
+if not st.session_state.authenticated:
+    st.markdown('<div class="hero-title">⚾ 2026 HR PREDICTOR</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-sub">Statcast-powered home run projections</div>', unsafe_allow_html=True)
+    st.divider()
+    st.markdown("""
+    <div class="lock-box">
+        <div class="lock-title">🔒 ACCESS REQUIRED</div>
+        <div class="lock-sub">Enter your access key to unlock the predictor</div>
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+    pw = st.text_input("Access Key", type="password", placeholder="Enter your access key...")
+    if st.button("🔓  UNLOCK"):
+        if pw in VALID_PASSWORDS:
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.markdown('<div class="warn">⚠ Invalid access key. Please check your key and try again.</div>', unsafe_allow_html=True)
+    st.stop()
 
 # ── Model Coefficients ────────────────────────────────────────────────────────
 OLS = {"barrel_lag":1.214902,"la_lag":0.396909,"parkfactor":0.0802275,"exitvelo_lag":0.8137156,"ab":0.0564566,"pullpct_lag":0.2238586,"whiff_lag":-0.1904445,"_cons":-110.3828}
@@ -168,7 +244,7 @@ def conf(lp, op):
     elif gap <= 10: return "● MOD",  "#d29922"
     else:           return "● LOW",  "#f85149"
 
-# ── UI ────────────────────────────────────────────────────────────────────────
+# ── Main App ──────────────────────────────────────────────────────────────────
 st.markdown('<div class="hero-title">⚾ 2026 HR PREDICTOR</div>', unsafe_allow_html=True)
 st.markdown('<div class="hero-sub">Statcast-powered home run projections</div>', unsafe_allow_html=True)
 st.divider()
@@ -217,9 +293,7 @@ if go:
             ("P(40+ HRs)", "#ffa657", p40, o40),
         ]
 
-        # Column headers
         c0, c1, c2, c3 = st.columns([3, 1.5, 1.5, 1.5])
-        c0.markdown("<span style='font-size:0.65rem;color:#484f58;text-transform:uppercase;letter-spacing:0.08em'></span>", unsafe_allow_html=True)
         c1.markdown("<span style='font-size:0.65rem;color:#58a6ff;text-transform:uppercase;letter-spacing:0.08em'>LOGIT</span>", unsafe_allow_html=True)
         c2.markdown("<span style='font-size:0.65rem;color:#484f58;text-transform:uppercase;letter-spacing:0.08em'>OLS</span>", unsafe_allow_html=True)
         c3.markdown("<span style='font-size:0.65rem;color:#484f58;text-transform:uppercase;letter-spacing:0.08em'>CONF</span>", unsafe_allow_html=True)

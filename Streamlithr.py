@@ -1,7 +1,7 @@
 import streamlit as st
 import math
 
-st.set_page_config(page_title="2026 HR Predictor", page_icon="⚾", layout="centered")
+st.set_page_config(page_title="2027 HR Predictor", page_icon="⚾", layout="centered")
 
 st.markdown("""
 <style>
@@ -190,7 +190,7 @@ if "authenticated" not in st.session_state:
 
 # ── Login Screen ──────────────────────────────────────────────────────────────
 if not st.session_state.authenticated:
-    st.markdown('<div class="hero-title">⚾ 2026 HR PREDICTOR</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-title">⚾ 2027 HR PREDICTOR</div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-sub">Statcast-powered home run projections</div>', unsafe_allow_html=True)
     st.divider()
     st.markdown("""
@@ -210,20 +210,22 @@ if not st.session_state.authenticated:
     st.stop()
 
 # ── Model Coefficients ────────────────────────────────────────────────────────
-OLS = {"barrel_lag":1.214902,"la_lag":0.396909,"parkfactor":0.0802275,"exitvelo_lag":0.8137156,"ab":0.0564566,"pullpct_lag":0.2238586,"whiff_lag":-0.1904445,"_cons":-110.3828}
-LOGIT_25 = {"barrel_lag":0.394023,"la_lag":0.164662,"ab":0.0163556,"whiff_lag":-0.0760035,"_cons":-13.72815}
-LOGIT_30 = {"barrel_lag":0.2106175,"la_lag":0.1454653,"exitvelo_lag":0.2452231,"ab":0.0114286,"pullpct_lag":0.0618841,"_cons":-36.43202}
-LOGIT_35 = {"barrel_lag":0.2148692,"la_lag":0.1638978,"parkfactor":0.0367873,"exitvelo_lag":0.3238177,"ab":0.0096571,"_cons":-45.51782}
-LOGIT_40 = {"barrel_lag":0.4922924,"parkfactor":0.0349446,"ab":0.0099082,"whiff_lag":-0.0947542,"_cons":-15.80834}
+OLS = {"barrel_lag": 0.7326097, "la_lag": 0.4061775, "parkfactor": 0.0917247, "exitvelo_lag": 1.242968, "ab": 0.05774608, "pullpct_lag": 0.2259274, "_cons": -151.5358}
+LOGIT_25 = {"barrel_lag": 0.2331153, "la_lag": 0.103897, "ab": 0.01461827, "_cons": -12.25556}
+LOGIT_30 = {"barrel_lag": 0.1222681, "la_lag": 0.1026502, "exitvelo_lag": 0.2966573, "ab": 0.01279434, "pullpct_lag": 0.06011243, "_cons": -40.40814}
+LOGIT_35 = {"barrel_lag": 0.1551013, "la_lag": 0.1607183, "parkfactor": 0.03143246, "exitvelo_lag": 0.3986306, "ab": 0.0119372, "_cons": -52.38233}
+LOGIT_40 = {"barrel_lag": 0.3815333, "parkfactor": 0.03494231, "ab": 0.01456047, "_cons": -19.45617}
 
-CORRECTION_25, CORRECTION_30, CORRECTION_35, CORRECTION_40 = 0.854, 0.833, 0.733, 0.625
-RMSE, OLS_BIAS = 7.0507, 2.0
+# Refit on 2022-2026 data. Leave-one-year-out calibration ratios were ~0.96-0.98,
+# so the old era corrections (0.63-0.85, -2 HR) are no longer needed.
+CORRECTION_25, CORRECTION_30, CORRECTION_35, CORRECTION_40 = 0.984, 0.957, 0.981, 0.977
+RMSE, OLS_BIAS = 7.37, 0.0
 
 def logistic(x): return 1 / (1 + math.exp(-x))
 def norm_cdf(z): return 0.5 * (1 + math.erf(z / math.sqrt(2)))
 
-def predict(barrel, la, pf, exitvelo, ab, pull, whiff):
-    inputs = {"barrel_lag":barrel,"la_lag":la,"parkfactor":pf,"exitvelo_lag":exitvelo,"ab":ab,"pullpct_lag":pull,"whiff_lag":whiff}
+def predict(barrel, la, pf, exitvelo, ab, pull):
+    inputs = {"barrel_lag":barrel,"la_lag":la,"parkfactor":pf,"exitvelo_lag":exitvelo,"ab":ab,"pullpct_lag":pull}
     def score(c): return c["_cons"] + sum(c[k]*v for k,v in inputs.items() if k in c)
     hr  = score(OLS) - OLS_BIAS
     p25 = logistic(score(LOGIT_25))*100*CORRECTION_25
@@ -245,11 +247,11 @@ def conf(lp, op):
     else:           return "● LOW",  "#f85149"
 
 # ── Main App ──────────────────────────────────────────────────────────────────
-st.markdown('<div class="hero-title">⚾ 2026 HR PREDICTOR</div>', unsafe_allow_html=True)
+st.markdown('<div class="hero-title">⚾ 2027 HR PREDICTOR</div>', unsafe_allow_html=True)
 st.markdown('<div class="hero-sub">Statcast-powered home run projections</div>', unsafe_allow_html=True)
 st.divider()
 
-st.markdown('<div class="section-label">2025 Statcast Metrics</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-label">2026 Statcast Metrics</div>', unsafe_allow_html=True)
 col1, col2 = st.columns(2)
 with col1:
     barrel   = st.number_input("Barrel Rate %", min_value=0.0, max_value=30.0, value=None, placeholder="e.g. 12.5", format="%.1f")
@@ -257,9 +259,8 @@ with col1:
     exitvelo = st.number_input("Exit Velo Avg (mph)", min_value=70.0, max_value=120.0, value=None, placeholder="e.g. 91.2", format="%.1f")
 with col2:
     pull  = st.number_input("Pull Rate %", min_value=0.0, max_value=80.0, value=None, placeholder="e.g. 42.0", format="%.1f")
-    whiff = st.number_input("Whiff Rate %", min_value=0.0, max_value=60.0, value=None, placeholder="e.g. 28.0", format="%.1f")
 
-st.markdown('<div class="section-label" style="margin-top:0.8rem">2026 Projections</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-label" style="margin-top:0.8rem">2027 Projections</div>', unsafe_allow_html=True)
 col3, col4 = st.columns(2)
 with col3:
     pf = st.number_input("Park Factor", min_value=70, max_value=130, value=None, placeholder="e.g. 105", format="%d")
@@ -267,19 +268,19 @@ with col4:
     ab = st.number_input("Projected At Bats", min_value=50, max_value=700, value=None, placeholder="e.g. 550", format="%d")
 
 st.divider()
-go = st.button("⚾  PREDICT 2026 HOME RUNS")
+go = st.button("⚾  PREDICT 2027 HOME RUNS")
 
 if go:
-    if any(v is None for v in [barrel, la, exitvelo, pull, whiff, pf, ab]):
+    if any(v is None for v in [barrel, la, exitvelo, pull, pf, ab]):
         st.markdown('<div class="warn">⚠ Please fill in all fields before predicting.</div>', unsafe_allow_html=True)
     elif barrel < 7 or exitvelo < 87:
         st.markdown('<div class="warn">⚠ Model requires Barrel Rate ≥ 7% and Exit Velo ≥ 87 mph.</div>', unsafe_allow_html=True)
     else:
-        hr, p25, p30, p35, p40, o25, o30, o35, o40 = predict(barrel, la, pf, exitvelo, ab, pull, whiff)
+        hr, p25, p30, p35, p40, o25, o30, o35, o40 = predict(barrel, la, pf, exitvelo, ab, pull)
 
         st.markdown(f"""
         <div class="result-card">
-            <div class="hr-sublabel">Projected HRs (2026)</div>
+            <div class="hr-sublabel">Projected HRs (2027)</div>
             <div class="hr-display">{hr:.1f}</div>
         </div>
         """, unsafe_allow_html=True)

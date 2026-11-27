@@ -597,34 +597,51 @@ with tab2:
     with f2:
         min_pa = st.number_input("Min 2026 PA", min_value=0, max_value=700, value=200, step=25)
 
-    lb_rows = []
+    pop = []
     for name, pa_, hr26, brl, la_, ev_, pl in PLAYERS_2026:
-        if pa_ < min_pa or (search and search.lower() not in name.lower()):
+        if pa_ < min_pa:
             continue
         hr_, p25_, p30_, p35_, p40_, *_ = predict(brl, la_, LB_PARK_FACTOR, ev_, LB_AT_BATS, pl)
-        lb_rows.append({"Player": name, "Proj HR": round(hr_, 1), "P(25+)": p25_, "P(30+)": p30_,
-                        "P(35+)": p35_, "P(40+)": p40_, "2026 HR": hr26, "2026 PA": pa_,
-                        "Barrel %": brl, "LA": la_, "Exit Velo": ev_, "Pull %": pl})
-    lb_rows.sort(key=lambda r: r["Proj HR"], reverse=True)
-    for i, r in enumerate(lb_rows, 1):
+        pop.append({"Player": name, "Proj HR": round(hr_, 1), "P(25+)": p25_, "P(30+)": p30_,
+                    "P(35+)": p35_, "P(40+)": p40_, "2026 HR": hr26, "2026 PA": pa_,
+                    "Barrel %": brl, "LA": la_, "Exit Velo": ev_, "Pull %": pl})
+    pop.sort(key=lambda r: r["Proj HR"], reverse=True)
+    for i, r in enumerate(pop, 1):
         r["Rank"] = i
-    if lb_rows:
-        lb = pd.DataFrame(lb_rows)[["Rank", "Player", "Proj HR", "P(25+)", "P(30+)", "P(35+)", "P(40+)",
-                                    "2026 HR", "2026 PA", "Barrel %", "LA", "Exit Velo", "Pull %"]]
-        pct = lambda t: st.column_config.NumberColumn(t, format="%.1f%%")
-        st.dataframe(
-            lb, hide_index=True, height=620,
-            column_config={
-                "Proj HR": st.column_config.NumberColumn("Proj HR", format="%.1f"),
-                "P(25+)": pct("P(25+)"), "P(30+)": pct("P(30+)"),
-                "P(35+)": pct("P(35+)"), "P(40+)": pct("P(40+)"),
-                "Barrel %": st.column_config.NumberColumn("Barrel %", format="%.1f"),
-                "LA": st.column_config.NumberColumn("LA", format="%.1f"),
-                "Exit Velo": st.column_config.NumberColumn("Exit Velo", format="%.1f"),
-                "Pull %": st.column_config.NumberColumn("Pull %", format="%.1f"),
-            })
-        st.markdown(f"<span style='font-size:0.65rem;color:#484f58'>{len(lb_rows)} players &nbsp;|&nbsp; "
-                    f"probabilities are the logit models &nbsp;|&nbsp; click a column header to sort</span>",
-                    unsafe_allow_html=True)
-    else:
+
+    if not pop:
         st.markdown('<div class="warn">No players match those filters.</div>', unsafe_allow_html=True)
+    else:
+        cols = ["Rank", "Player", "Proj HR", "P(25+)", "P(30+)", "P(35+)", "P(40+)",
+                "2026 HR", "2026 PA", "Barrel %", "LA", "Exit Velo", "Pull %"]
+        heat_cols = cols[2:]
+        lb_all = pd.DataFrame(pop)[cols]
+        # Heat map cutoffs come from the full list (at the min-PA setting), not the search result
+        hi = lb_all[heat_cols].quantile(0.90)
+        lo = lb_all[heat_cols].quantile(0.10)
+        lb = lb_all
+        if search:
+            lb = lb_all[lb_all["Player"].str.lower().str.contains(search.lower(), regex=False)]
+
+        if len(lb) == 0:
+            st.markdown('<div class="warn">No players match those filters.</div>', unsafe_allow_html=True)
+        else:
+            GREEN = "background-color: rgba(63,185,80,0.45)"
+            RED   = "background-color: rgba(248,81,73,0.45)"
+
+            def heat(col):
+                return [GREEN if v >= hi[col.name] else (RED if v <= lo[col.name] else "") for v in col]
+
+            styled = lb.style.apply(heat, subset=heat_cols).format({
+                "Proj HR": "{:.1f}",
+                "P(25+)": "{:.1f}%", "P(30+)": "{:.1f}%", "P(35+)": "{:.1f}%", "P(40+)": "{:.1f}%",
+                "2026 HR": "{:d}", "2026 PA": "{:d}",
+                "Barrel %": "{:.1f}", "LA": "{:.1f}", "Exit Velo": "{:.1f}", "Pull %": "{:.1f}",
+            })
+            st.dataframe(styled, hide_index=True, height=620)
+            st.markdown(
+                f"<span style='font-size:0.65rem;color:#484f58'>{len(lb)} of {len(lb_all)} players &nbsp;|&nbsp; "
+                f"<span style='color:#3fb950'>&#9632;</span> top 10% of each column &nbsp;"
+                f"<span style='color:#f85149'>&#9632;</span> bottom 10% &nbsp;|&nbsp; "
+                f"probabilities are the logit models &nbsp;|&nbsp; click a column header to sort</span>",
+                unsafe_allow_html=True)

@@ -596,6 +596,11 @@ with tab2:
         search = st.text_input("Search player", placeholder="e.g. Judge")
     with f2:
         min_pa = st.number_input("Min 2026 PA", min_value=0, max_value=700, value=200, step=25)
+    t1, t2 = st.columns(2)
+    with t1:
+        show_heat = st.toggle("Color code (heat map)", value=True)
+    with t2:
+        show_odds = st.toggle("Show sportsbook odds instead of probabilities", value=False)
 
     pop = []
     for name, pa_, hr26, brl, la_, ev_, pl in PLAYERS_2026:
@@ -632,16 +637,28 @@ with tab2:
             def heat(col):
                 return [GREEN if v >= hi[col.name] else (RED if v <= lo[col.name] else "") for v in col]
 
-            styled = lb.style.apply(heat, subset=heat_cols).format({
+            def to_odds(p):
+                # American odds from a percent probability; 50% shows as +100
+                p = min(max(p, 0.01), 99.99) / 100
+                if p >= 0.5 and p != 0.5:
+                    return f"{-round(p / (1 - p) * 100):d}"
+                return f"+{min(round((1 - p) / p * 100), 10000):d}"
+
+            prob_fmt = to_odds if show_odds else "{:.1f}%".format
+            styler = lb.style
+            if show_heat:
+                styler = styler.apply(heat, subset=heat_cols)
+            styled = styler.format({
                 "Proj HR": "{:.1f}",
-                "P(25+)": "{:.1f}%", "P(30+)": "{:.1f}%", "P(35+)": "{:.1f}%", "P(40+)": "{:.1f}%",
+                "P(25+)": prob_fmt, "P(30+)": prob_fmt, "P(35+)": prob_fmt, "P(40+)": prob_fmt,
                 "2026 HR": "{:d}", "2026 PA": "{:d}",
                 "Barrel %": "{:.1f}", "LA": "{:.1f}", "Exit Velo": "{:.1f}", "Pull %": "{:.1f}",
             })
             st.dataframe(styled, hide_index=True, height=620)
             st.markdown(
                 f"<span style='font-size:0.65rem;color:#484f58'>{len(lb)} of {len(lb_all)} players &nbsp;|&nbsp; "
-                f"<span style='color:#3fb950'>&#9632;</span> top 10% of each column &nbsp;"
-                f"<span style='color:#f85149'>&#9632;</span> bottom 10% &nbsp;|&nbsp; "
-                f"probabilities are the logit models &nbsp;|&nbsp; click a column header to sort</span>",
+                + ("<span style='color:#3fb950'>&#9632;</span> top 10% of each column &nbsp;"
+                   "<span style='color:#f85149'>&#9632;</span> bottom 10% &nbsp;|&nbsp; " if show_heat else "")
+                + ("American odds (fair price from the logit models, no vig)" if show_odds else "probabilities are the logit models")
+                + " &nbsp;|&nbsp; click a column header to sort</span>",
                 unsafe_allow_html=True)
